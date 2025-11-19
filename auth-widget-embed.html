@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow-x: hidden;
+}
+</style>
+</head>
+<body>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth-compat.js"></script>
+
+<!-- Auth Button (No Dropdown) -->
+<button id="authToggleBtn" style="padding:8px 16px;font-size:14px;background-color:#111;color:#fff;border:1px solid #fff;border-radius:4px;cursor:pointer;text-transform:uppercase;transition:all 0.2s ease;">
+  LOG IN / REGISTER
+</button>
+
+<style>
+#authToggleBtn:hover {
+  background-color:#222;
+  box-shadow:0 0 8px rgba(255,255,255,0.4);
+  transform:scale(1.03);
+}
+.auth-button {
+  width:100%;
+  padding:14px 20px;
+  font-size:16px;
+  background-color:#111;
+  color:#fff;
+  border:1px solid #fff;
+  border-radius:4px;
+  cursor:pointer;
+  text-transform:uppercase;
+  transition:all 0.2s ease;
+  display:block;
+  margin:8px 0;
+  line-height:1.4;
+  min-height:50px;
+  box-sizing:border-box;
+  pointer-events:auto;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.auth-button:hover:not(:disabled) {
+  background-color:#222;
+  box-shadow:0 0 8px rgba(255,255,255,0.4);
+}
+.auth-button:disabled {
+  opacity:0.6;
+  cursor:not-allowed;
+}
+.auth-button.primary {
+  background-color:#555;
+}
+.auth-link {
+  color:#0af;
+  text-decoration:underline;
+  cursor:pointer;
+  font-size:13px;
+  position:relative;
+  z-index:10;
+  display:inline-block;
+  padding:4px 8px;
+  pointer-events:auto;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.auth-link:hover {
+  color:#0cf;
+}
+.password-req {
+  font-size:12px;
+  line-height:1.8;
+  margin:10px 0 15px;
+  padding:10px;
+  background:#0a0a0a;
+  border:1px solid #333;
+  border-radius:4px;
+}
+.password-req-item {
+  margin:3px 0;
+}
+.password-req-item.valid {
+  color:#0f0;
+}
+.password-req-item.invalid {
+  color:#f00;
+}
+.password-req-item.neutral {
+  color:#888;
+}
+.email-warning {
+  background:#332200;
+  border:1px solid #ff9900;
+  border-radius:4px;
+  padding:12px;
+  margin:15px 0;
+  font-size:13px;
+  line-height:1.6;
+  color:#ffcc66;
+}
+.email-warning strong {
+  color:#ff9900;
+  display:block;
+  margin-bottom:5px;
+}
+@keyframes shake {
+  0%,100%{transform:translateX(0)}
+  10%,30%,50%,70%,90%{transform:translateX(-5px)}
+  20%,40%,60%,80%{transform:translateX(5px)}
+}
+.shake {
+  animation:shake .5s;
+}
+.modal-content {
+  background:#000;
+  max-width:420px;
+  margin:80px auto;
+  padding:35px;
+  border-radius:8px;
+  box-shadow:0 0 20px rgba(255,255,255,0.3);
+  position:relative;
+  color:#fff;
+  z-index:999999999;
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-touch-callout:none;
+}
+.modal-content * {
+  -webkit-tap-highlight-color:transparent;
+  -webkit-touch-callout:none;
+}
+.input-field {
+  width:100%;
+  padding:12px;
+  padding-right:45px;
+  margin-bottom:12px;
+  border:1px solid #fff;
+  border-radius:4px;
+  background:#111;
+  color:#fff;
+  font-size:15px;
+  box-sizing:border-box;
+  pointer-events:auto;
+  -webkit-user-select:text;
+  user-select:text;
+  -webkit-touch-callout:default;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:rgba(0,170,255,0.3);
+}
+.input-field:focus {
+  outline:0;
+  border-color:#0af;
+  box-shadow:0 0 5px rgba(0,170,255,0.5);
+}
+.password-wrapper {
+  position:relative;
+  margin-bottom:12px;
+}
+.password-wrapper .input-field {
+  margin-bottom:0;
+}
+.eye-icon {
+  position:absolute;
+  right:12px;
+  top:50%;
+  transform:translateY(-50%);
+  cursor:pointer;
+  font-size:18px;
+  color:#888;
+  user-select:none;
+}
+.eye-icon:hover {
+  color:#fff;
+}
+.close-button {
+  position:absolute;
+  top:15px;
+  right:15px;
+  background:none;
+  border:none;
+  font-size:28px;
+  color:#fff;
+  cursor:pointer;
+  width:35px;
+  height:35px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:100;
+  padding:0;
+  line-height:1;
+  transition:color 0.2s ease, transform 0.2s ease;
+}
+.close-button:hover {
+  color:#f00;
+  transform:scale(1.1);
+}
+</style>
+
+<div id="authModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:999999999;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+  <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);" id="authModalOverlay"></div>
+  <div id="modalContent" class="modal-content" style="position:relative;z-index:1000000000;"></div>
+</div>
+
+<script>
+window.addEventListener('load', function() {
+  if (window.rbInit) return;
+  window.rbInit = true;
+  
+  if (typeof firebase === 'undefined') {
+    setTimeout(arguments.callee, 100);
+    return;
+  }
+
+  firebase.initializeApp({
+    apiKey: 'AIzaSyC6eO8xwEL2NoRaS0JyFo025e4sWOjW-kU',
+    authDomain: 'riddimbank-webauth.firebaseapp.com',
+    projectId: 'riddimbank-webauth',
+    storageBucket: 'riddimbank-webauth.appspot.com',
+    messagingSenderId: '344714113501',
+    appId: '1:344714113501:web:2aa474e6286e3127850634'
+  });
+
+  var els = {
+    btn: document.getElementById('authToggleBtn'),
+    modal: document.getElementById('authModal'),
+    content: document.getElementById('modalContent')
+  };
+
+  var busy = false;
+
+  function save(u) {
+    sessionStorage.setItem('riddimbankUserUID', u.uid);
+    sessionStorage.setItem('riddimbankUserEmail', u.email);
+  }
+
+  function clear() {
+    sessionStorage.removeItem('riddimbankUserUID');
+    sessionStorage.removeItem('riddimbankUserEmail');
+  }
+
+  function checkPw(pw) {
+    var ok = {
+      len: pw.length >= 8,
+      up: /[A-Z]/.test(pw),
+      low: /[a-z]/.test(pw),
+      num: /[0-9]/.test(pw),
+      spec: /[^A-Za-z0-9]/.test(pw)
+    };
+    ok.valid = ok.len && ok.up && ok.low && ok.num && ok.spec;
+    return ok;
+  }
+
+  function updateReqs(pw) {
+    var c = checkPw(pw);
+    var map = {
+      'req-len': c.len,
+      'req-up': c.up,
+      'req-low': c.low,
+      'req-num': c.num,
+      'req-spec': c.spec
+    };
+    for (var id in map) {
+      var el = document.getElementById(id);
+      if (el) {
+        if (pw === '') {
+          el.className = 'password-req-item neutral';
+        } else if (map[id]) {
+          el.className = 'password-req-item valid';
+        } else {
+          el.className = 'password-req-item invalid';
+        }
+      }
+    }
+    return c;
+  }
+
+  function togglePw(fieldId, iconId) {
+    var field = document.getElementById(fieldId);
+    var icon = document.getElementById(iconId);
+    if (field.type === 'password') {
+      field.type = 'text';
+      icon.textContent = '👁️';
+    } else {
+      field.type = 'password';
+      icon.textContent = '👁️';
+    }
+  }
+
+  function cleanError(err) {
+    var msg = err.message || err.code || 'An error occurred';
+    
+    if (err.code === 'auth/invalid-email') {
+      return 'Email address is incorrectly formatted.';
+    }
+    if (err.code === 'auth/user-not-found') {
+      return 'No account found with this email.';
+    }
+    if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-login-credentials') {
+      return 'Email or password is incorrect.';
+    }
+    if (err.code === 'auth/email-already-in-use') {
+      return 'This email is already registered.';
+    }
+    if (err.code === 'auth/weak-password') {
+      return 'Password is too weak.';
+    }
+    
+    msg = msg.replace(/Firebase:\s*/gi, '');
+    msg = msg.replace(/\(auth\/[^)]+\)/g, '');
+    msg = msg.trim();
+    
+    return msg;
+  }
+
+  function closeModalBtn() {
+    closeModal();
+  }
+
+  var regWarningShown = false;
+
+  function showLogin() {
+    regWarningShown = false;
+    els.content.innerHTML = '<button class="close-button" id="closeModalBtn">&times;</button><h2 style="margin:0 0 25px 0;color:#fff;">Welcome to riddimBank</h2><input type="email" id="rbEmailInput2025" class="input-field" placeholder="Email Address" autocomplete="off"><input type="password" id="rbPasswordInput2025" class="input-field" placeholder="Password" autocomplete="off" style="padding-right:12px;"><div class="password-req"><div style="font-weight:bold;margin-bottom:8px;color:#fff;">Password Requirements:</div><div id="req-len" class="password-req-item neutral">• At least 8 characters</div><div id="req-up" class="password-req-item neutral">• Uppercase letter (A-Z)</div><div id="req-low" class="password-req-item neutral">• Lowercase letter (a-z)</div><div id="req-num" class="password-req-item neutral">• Number (0-9)</div><div id="req-spec" class="password-req-item neutral">• Special character (!@#$%^&*)</div></div><p style="text-align:right;margin:-5px 0 15px;"><span id="resetLink" class="auth-link">Reset Password</span></p><button id="rbLoginBtn2025" class="auth-button">LOG IN</button><button id="rbRegBtn2025" class="auth-button primary">REGISTER</button>';
+    
+    document.getElementById('closeModalBtn').onclick = closeModalBtn;
+    
+    var pwField = document.getElementById('rbPasswordInput2025');
+    var emailField = document.getElementById('rbEmailInput2025');
+    
+    // Force focus on iOS when tapped
+    emailField.addEventListener('touchstart', function(e) {
+      e.stopPropagation();
+      this.focus();
+    });
+    
+    pwField.addEventListener('touchstart', function(e) {
+      e.stopPropagation();
+      this.focus();
+    });
+    
+    pwField.addEventListener('input', function(e) { updateReqs(e.target.value); });
+    pwField.addEventListener('keypress', function(e) { if (e.key === 'Enter') doLogin(); });
+    
+    emailField.addEventListener('keypress', function(e) { if (e.key === 'Enter') doLogin(); });
+    
+    document.getElementById('rbLoginBtn2025').onclick = doLogin;
+    document.getElementById('rbRegBtn2025').onclick = function() {
+      console.log('REGISTER clicked, flag is:', regWarningShown);
+      if (!regWarningShown) {
+        console.log('Going to doReg()');
+        doReg();
+      } else {
+        console.log('Going to doRegConfirmed()');
+        doRegConfirmed();
+      }
+    };
+    document.getElementById('resetLink').onclick = showReset;
+  }
+
+  function showReset() {
+    els.content.innerHTML = '<button class="close-button" id="closeModalBtn">&times;</button><h2 style="margin:0 0 10px 0;color:#fff;">Reset Your Password</h2><p style="color:#aaa;font-size:14px;margin:0 0 25px 0;padding:0;line-height:1.4;">Enter your email to receive a password reset link.</p><input type="email" id="resetEmail" class="input-field" placeholder="Email Address" autocomplete="username" style="margin-bottom:12px;"><div style="height:20px;"></div><div id="btnWrapper" style="position:relative;width:100%;margin:0;clear:both;"><button id="sendResetBtn" class="auth-button primary" style="pointer-events:none !important;margin:0;width:100%;position:relative;">SEND RESET LINK</button><div id="btnClickCatcher" style="position:absolute;top:0;left:0;width:100%;height:100%;cursor:pointer;z-index:999999;background:transparent;transition:all 0.2s ease;box-shadow:none;"></div></div><div style="height:20px;"></div><p style="text-align:center;margin:0;"><span id="backLink" class="auth-link">Back to Login</span></p>';
+    
+    document.getElementById('closeModalBtn').onclick = closeModalBtn;
+    
+    var resetField = document.getElementById('resetEmail');
+    
+    // Force focus on iOS when tapped
+    resetField.addEventListener('touchstart', function(e) {
+      e.stopPropagation();
+      this.focus();
+    });
+    
+    resetField.addEventListener('keypress', function(e) { if (e.key === 'Enter') doReset(); });
+    
+    var btn = document.getElementById('sendResetBtn');
+    var catcher = document.getElementById('btnClickCatcher');
+    
+    // Use ONLY mousedown with capture phase - this is enough and prevents duplicates
+    catcher.addEventListener('mousedown', function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      doReset();
+    }, true);
+    
+    // Also add touchstart for mobile
+    catcher.addEventListener('touchstart', function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      doReset();
+    }, true);
+    
+    // Hover effect - darken overlay on the catcher itself
+    catcher.addEventListener('mouseenter', function() {
+      this.style.background = 'rgba(0,0,0,0.2)'; // Dark overlay
+      this.style.boxShadow = '0 0 8px rgba(255,255,255,0.4)'; // Glow
+    });
+    catcher.addEventListener('mouseleave', function() {
+      this.style.background = 'transparent';
+      this.style.boxShadow = 'none';
+    });
+    
+    document.getElementById('backLink').onclick = showLogin;
+  }
+
+  function doLogin() {
+    if (busy) return;
+    
+    var emailField = document.getElementById('rbEmailInput2025');
+    var pwField = document.getElementById('rbPasswordInput2025');
+    var btn = document.getElementById('rbLoginBtn2025');
+    
+    if (!emailField || !pwField) {
+      alert('Error loading login form. Please close and reopen.');
+      return;
+    }
+    
+    var email = emailField.value.trim();
+    var pw = pwField.value.trim();
+    
+    if (!email || !pw) {
+      alert('Please enter both email and password.');
+      return;
+    }
+
+    busy = true;
+    btn.disabled = true;
+    btn.textContent = 'LOGGING IN...';
+
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+      .then(function() { return firebase.auth().signInWithEmailAndPassword(email, pw); })
+      .then(function(cred) {
+        return cred.user.reload().then(function() {
+          save(cred.user);
+          closeModal();
+        });
+      })
+      .catch(function(err) {
+        alert('Login failed: ' + cleanError(err));
+      })
+      .finally(function() {
+        busy = false;
+        btn.disabled = false;
+        btn.textContent = 'LOG IN';
+      });
+  }
+
+  function doReg() {
+    if (busy) return;
+    
+    var emailField = document.getElementById('rbEmailInput2025');
+    var pwField = document.getElementById('rbPasswordInput2025');
+    var btn = document.getElementById('rbRegBtn2025');
+    
+    if (!emailField || !pwField) {
+      alert('Error loading registration form. Please close and reopen.');
+      return;
+    }
+    
+    var email = emailField.value.trim();
+    var pw = pwField.value.trim();
+    
+    if (!email || !pw) {
+      alert('Please enter both email and password.');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+
+    var c = checkPw(pw);
+    if (!c.valid) {
+      els.content.classList.add('shake');
+      setTimeout(function() { els.content.classList.remove('shake'); }, 500);
+      var missing = [];
+      if (!c.len) missing.push('• At least 8 characters');
+      if (!c.up) missing.push('• Uppercase letter (A-Z)');
+      if (!c.low) missing.push('• Lowercase letter (a-z)');
+      if (!c.num) missing.push('• Number (0-9)');
+      if (!c.spec) missing.push('• Special character (!@#$%^&*)');
+      alert('Password does not meet requirements:\n\n' + missing.join('\n') + '\n\n⚠️ Note: Email cannot be changed after registration.');
+      return;
+    }
+
+    // Quick check: try to create account to see if email already exists
+    busy = true;
+    btn.disabled = true;
+    btn.textContent = 'CHECKING...';
+
+    firebase.auth().createUserWithEmailAndPassword(email, pw)
+      .then(function(cred) {
+        // Email was available! Delete this test account immediately
+        return cred.user.delete().then(function() {
+          // Now show the warning
+          busy = false;
+          btn.disabled = false;
+          btn.textContent = 'REGISTER';
+          
+          alert('⚠️ Please Confirm Your Email\n\n' +
+                'Registering with: ' + email + '\n\n' +
+                'Email addresses cannot be changed later.\n\n' +
+                'If correct, click REGISTER again.\n' +
+                'If not, please update your email first.');
+          
+          regWarningShown = true;
+        });
+      })
+      .catch(function(err) {
+        busy = false;
+        btn.disabled = false;
+        btn.textContent = 'REGISTER';
+        
+        if (err.code === 'auth/email-already-in-use') {
+          // Email already exists - skip warning
+          alert('This email is already registered.\n\nPlease log in instead, or use a different email.');
+          regWarningShown = false;
+        } else {
+          // Other error - show it
+          alert('Error: ' + cleanError(err));
+          regWarningShown = false;
+        }
+      });
+  }
+
+  function doRegConfirmed() {
+    if (busy) return;
+    
+    var emailField = document.getElementById('rbEmailInput2025');
+    var pwField = document.getElementById('rbPasswordInput2025');
+    var btn = document.getElementById('rbRegBtn2025');
+    
+    if (!emailField || !pwField) {
+      alert('Error loading registration form. Please close and reopen.');
+      return;
+    }
+    
+    var email = emailField.value.trim();
+    var pw = pwField.value.trim();
+
+    busy = true;
+    btn.disabled = true;
+    btn.textContent = 'CREATING ACCOUNT...';
+
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+      .then(function() { return firebase.auth().createUserWithEmailAndPassword(email, pw); })
+      .then(function(cred) {
+        return cred.user.sendEmailVerification({
+          url: 'https://riddimbank.com/',
+          handleCodeInApp: false
+        });
+      })
+      .then(function() { return firebase.auth().signOut(); })
+      .then(function() {
+        alert('✅ Registration Successful!\n\nVerification email sent to:\n' + email + '\n\n(Email verification temporarily disabled for testing)\n\nYou can now log in.');
+        closeModal();
+      })
+      .catch(function(err) {
+        // Reset flag on any error so user can try again
+        regWarningShown = false;
+        
+        if (err.code === 'auth/email-already-in-use') {
+          alert('This email is already registered.\n\nPlease log in instead, or use a different email.');
+        } else {
+          alert('Registration failed: ' + cleanError(err));
+        }
+      })
+      .finally(function() {
+        busy = false;
+        btn.disabled = false;
+        btn.textContent = 'REGISTER';
+      });
+  }
+
+  function doReset() {
+    var emailField = document.getElementById('resetEmail');
+    var btn = document.getElementById('sendResetBtn');
+    
+    if (!emailField) {
+      alert('Error loading reset form. Please close and reopen.');
+      return;
+    }
+    
+    var email = emailField.value.trim();
+    
+    if (!email) {
+      alert('Please enter your email address.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'SENDING...';
+
+    firebase.auth().sendPasswordResetEmail(email)
+      .then(function() {
+        alert('✅ Password Reset Link Sent\n\nIf an account exists with this email, a reset link has been sent.\n\nPlease check your inbox (and spam folder).');
+        showLogin();
+      })
+      .catch(function(err) {
+        alert('✅ Password Reset Link Sent\n\nIf an account exists with this email, a reset link has been sent.\n\nPlease check your inbox (and spam folder).');
+        showLogin();
+      })
+      .finally(function() {
+        btn.disabled = false;
+        btn.textContent = 'SEND RESET LINK';
+      });
+  }
+
+  function openModal() {
+    els.modal.style.display = 'block';
+    showLogin();
+    
+    // Notify parent window to resize iframe
+    if (window.parent !== window) {
+      window.parent.postMessage({authModalOpen: true}, '*');
+    }
+    
+    // Close modal when clicking the overlay
+    document.getElementById('authModalOverlay').onclick = function() {
+      closeModal();
+    };
+  }
+
+  function closeModal() {
+    els.modal.style.display = 'none';
+    els.content.innerHTML = '';
+    
+    // Notify parent window to shrink iframe
+    if (window.parent !== window) {
+      window.parent.postMessage({authModalClosed: true}, '*');
+    }
+  }
+
+  firebase.auth().onAuthStateChanged(function(user) {
+    if (user) {
+      var name = user.email.split('@')[0].toUpperCase();
+      save(user);
+      els.btn.textContent = 'LOG OUT ' + name;
+      els.btn.onclick = function() {
+        if (confirm('Are you sure you want to log out?')) {
+          firebase.auth().signOut().then(function() {
+            clear();
+            location.reload();
+          });
+        }
+      };
+    } else {
+      els.btn.textContent = 'LOG IN / REGISTER';
+      els.btn.onclick = openModal;
+    }
+  });
+
+  window.checkEmailVerifiedBeforeRedemption = function() {
+    var u = firebase.auth().currentUser;
+    if (!u) {
+      alert('Please log in to redeem packs.');
+      return Promise.resolve(false);
+    }
+    return u.reload().then(function() {
+      console.log('TESTING MODE: Email verification check disabled');
+      return true;
+    });
+  };
+
+  window.getRiddimbankUser = function() {
+    var u = firebase.auth().currentUser;
+    return u ? {uid: u.uid, email: u.email, emailVerified: u.emailVerified} : null;
+  };
+});
+</script>
+</body></html>
