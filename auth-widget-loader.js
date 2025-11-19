@@ -33,11 +33,14 @@
   
   // Inject the HTML elements
   window.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded fired');
+    console.log('Window width:', window.innerWidth);
+    
     var html = `
       <button id="authToggleBtn">
         LOG IN / REGISTER
       </button>
-      <button id="authToggleBtnMobile" style="display:none;position:fixed;bottom:20px;right:20px;z-index:999999998;padding:12px 20px;font-size:14px;background-color:#111;color:#fff;border:1px solid #fff;border-radius:25px;cursor:pointer;text-transform:uppercase;box-shadow:0 4px 12px rgba(0,0,0,0.5);">
+      <button id="authToggleBtnMobile" style="position:fixed;bottom:20px;right:20px;z-index:999999998;padding:12px 20px;font-size:14px;background-color:#f00;color:#fff;border:2px solid #fff;border-radius:25px;cursor:pointer;text-transform:uppercase;box-shadow:0 4px 12px rgba(0,0,0,0.5);">
         LOG IN
       </button>
       <div id="authModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:999999999;overflow-y:auto;-webkit-overflow-scrolling:touch;">
@@ -50,20 +53,35 @@
     var menuBar = document.querySelector('.menu') || document.querySelector('nav') || document.querySelector('header');
     if (menuBar) {
       menuBar.insertAdjacentHTML('beforeend', html);
+      console.log('Inserted into menu bar');
     } else {
       document.body.insertAdjacentHTML('afterbegin', html);
+      console.log('Inserted into body');
     }
     
+    console.log('Mobile button element:', document.getElementById('authToggleBtnMobile'));
+    
     // Show mobile button only on small screens
+    var mobileBtn = document.getElementById('authToggleBtnMobile');
     if (window.innerWidth <= 768) {
-      document.getElementById('authToggleBtnMobile').style.display = 'block';
+      console.log('Screen is mobile size, showing button');
+      mobileBtn.style.display = 'block';
+    } else {
+      console.log('Screen is desktop size, hiding button');
+      mobileBtn.style.display = 'none';
     }
     
     // Handle window resize
     window.addEventListener('resize', function() {
       var mobileBtn = document.getElementById('authToggleBtnMobile');
       if (mobileBtn) {
-        mobileBtn.style.display = window.innerWidth <= 768 ? 'block' : 'none';
+        if (window.innerWidth <= 768) {
+          console.log('Resized to mobile, showing button');
+          mobileBtn.style.display = 'block';
+        } else {
+          console.log('Resized to desktop, hiding button');
+          mobileBtn.style.display = 'none';
+        }
       }
     });
   });
